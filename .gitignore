@@ -7,6 +7,7 @@ recordings
 logs
 wandb
 outputs
+models
 .ipynb_checkpoints
 *.ipynb
 *.pkl

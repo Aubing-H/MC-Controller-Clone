@@ -6,7 +6,7 @@ freq: 1
 goal_ratio: 5
 
 envs: 
-  - 'MineDoJoPlainsAnimalsAndLogs-v2'
+  - 'Plains'
 
 goals: 
   - 'log'

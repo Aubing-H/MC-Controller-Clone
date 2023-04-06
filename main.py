@@ -115,7 +115,8 @@ class Trainer:
         )
         
         if cfg['model']['name'] == 'simple':
-            self.model = torch.compile(SimpleNetwork(
+            # torch.compile()
+            self.model = SimpleNetwork(
                 action_space=self.action_space,
                 state_dim=cfg['model']['state_dim'],
                 goal_dim=cfg['model']['goal_dim'],
@@ -134,7 +135,7 @@ class Trainer:
                 use_pred_horizon=cfg['model']['use_pred_horizon'],
                 c=cfg['model']['c'],
                 transformer_cfg=cfg['model']['transformer_cfg']
-            ))
+            )
             # torch.save(self.model, "save_model.pt")
         else:
             raise NotImplementedError
