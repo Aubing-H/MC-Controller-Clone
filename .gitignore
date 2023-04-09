@@ -8,6 +8,7 @@ logs
 wandb
 outputs
 models
+dataset
 .ipynb_checkpoints
 *.ipynb
 *.pkl

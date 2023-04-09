@@ -41,12 +41,12 @@ torch.backends.cudnn.benchmark = True
 
 def making_exp_name(cfg):
     component = []
-    if cfg['model']['use_horizon']:
+    if cfg['model']['use_horizon']:  # True
         component.append('p:ho')
     else:
         component.append('p:bc')
     
-    component.append("b:" + cfg['model']['backbone_name'][:4])
+    component.append("b:" + cfg['model']['backbone_name'][:4])  # goal
     
     today = datetime.now()
     
@@ -74,24 +74,26 @@ class Trainer:
         self.action_space = [3, 3, 4, 11, 11, 8, 1, 1]
         self.cfg = cfg
         self.device = device
-        self.local_rank = local_rank
+        self.local_rank = local_rank  # 0
         self.exp_name = making_exp_name(cfg)
 
         #! accquire goal embeddings
         print("[Progress] [red]Computing goal embeddings using MineClip's text encoder...")
+        # log, sheep, cow, pig; use mineclip to convert goal to embeddings
         self.embedding_dict = accquire_goal_embeddings(cfg['pretrains']['clip_path'], cfg['data']['filters'])
         
-        if not cfg["eval"]["only"]:
+        if not cfg["eval"]["only"]:  # Train model
             #! use lmdb type dataset
             print("[Progress] [blue]Loading dataset...")
             self.train_dataset = LMDBTrajectoryDataset(
                 in_dir=cfg['data']['train_data'],
+                # 1e4 * 32
                 aug_ratio=cfg['optimize']['aug_ratio'] * cfg['optimize']['batch_size'],
                 embedding_dict= self.embedding_dict,
-                per_data_filters=cfg['data']['per_data_filters'], 
-                skip_frame=cfg['data']['skip_frame'],
-                window_len=cfg['data']['window_len'],
-                padding_pos=cfg['data']['padding_pos'],
+                per_data_filters=cfg['data']['per_data_filters'],  # null
+                skip_frame=cfg['data']['skip_frame'],  # 5
+                window_len=cfg['data']['window_len'],  # 16
+                padding_pos=cfg['data']['padding_pos'],  # left
             )
         
             if self.cfg.optimize.parallel:
@@ -391,7 +393,7 @@ class Trainer:
 
 @hydra.main(config_path="configs", config_name="defaults")
 def main(cfg):
-    if cfg.optimize.parallel:
+    if cfg.optimize.parallel:  # False
         local_rank = int(os.environ['LOCAL_RANK'])
         torch.distributed.init_process_group(backend='nccl')
     else:

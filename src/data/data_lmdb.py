@@ -54,7 +54,7 @@ class LMDBTrajectoryDataset(Dataset):
     def __init__(self, 
                  in_dir: Union[str, list], 
                  aug_ratio: float, 
-                 embedding_dict: dict, 
+                 embedding_dict: dict,  # goal embeddings
                  per_data_filters:list=None,
                  skip_frame: int=3,
                  window_len: int=20,
@@ -70,22 +70,23 @@ class LMDBTrajectoryDataset(Dataset):
         
         self.aug_ratio = aug_ratio
         self.embedding_dict = embedding_dict
-        self.filters = list(embedding_dict.keys())
+        self.filters = list(embedding_dict.keys())  # goals
         self.skip_frame = skip_frame
         self.window_len = window_len
         self.chunk_size = chunk_size
-        self.padding_pos = padding_pos
-        self.random_start = random_start
+        self.padding_pos = padding_pos  # left
+        self.random_start = random_start  # True
         
         self.traj_dirs = [os.path.join(base_dir, "trajs") for base_dir in self.base_dirs]
         self.indices_dirs = [os.path.join(base_dir, "indices") for base_dir in self.base_dirs]
 
+        # two lmdb, one is the index of the other
         self.lmdb_traj_envs = [lmdb.open(traj_dir, max_readers=12600, lock=False) for traj_dir in self.traj_dirs]
         self.lmdb_indices_envs = [lmdb.open(indices_dir, max_readers=12600, lock=False) for indices_dir in self.indices_dirs]
 
         # Build index
-        self.trajs_info = {}
-        self.trajs_by_goal = {}
+        self.trajs_info = {}  # store {traj_name: val, ...} that finish one of the goals
+        self.trajs_by_goal = {}  # store {goal: [traj_name, ...], ...}, that traj-id finished the goal
         for dataset_id, lmdb_indices_env in enumerate(self.lmdb_indices_envs):
             if per_data_filters is None:
                 per_data_filter = []
@@ -176,21 +177,22 @@ class LMDBTrajectoryDataset(Dataset):
         return goal, state, action, horizon, timestep, mask
 
     def __getitem__(self, idx):
-        
+        # random select one of the goals
         if self.filters is not None:
             goal = random.choice(self.filters)
         else:
             goal = random.choice(list(self.trajs_by_goal.keys()))
-        
+        # randomly select traj_name that finish the goal
         traj_id = np.random.randint(0, len(self.trajs_by_goal[goal]))
         traj_name = self.trajs_by_goal[goal][traj_id]
         traj_metadata = self.trajs_info[traj_name]
-        dataset_id = traj_metadata["dataset_id"]
+        dataset_id = traj_metadata["dataset_id"]  # task
 
         num_chunks = traj_metadata["num_chunks"]
         horizon = traj_metadata["horizon"]
         
         while horizon <=2:
+            # randomly choose again
             traj_id = np.random.randint(0, len(self.trajs_by_goal[goal]))
             traj_name = self.trajs_by_goal[goal][traj_id]
             traj_metadata = self.trajs_info[traj_name]
@@ -208,11 +210,13 @@ class LMDBTrajectoryDataset(Dataset):
                 si = random.randint(1, t_goal-1)
         else:
             si = 1
+        # math.ceil to up integer
         traj_len = min(math.ceil((t_goal - si) / self.skip_frame), self.window_len)
         ei = si + (traj_len - 1) * self.skip_frame
-        
-        s_chunk = math.floor(si / self.chunk_size)
-        e_chunk = math.floor(ei / self.chunk_size)
+        # math.floor to down integer
+        s_chunk = math.floor(si / self.chunk_size)  # always 0 unless chunk_size==1
+        # <= (window_len - 1)*skip_frame/chunk_size
+        e_chunk = math.floor(ei / self.chunk_size)  
         
         pile_chunks = []
         for chunk_id in range(s_chunk, e_chunk + 1):
@@ -220,7 +224,7 @@ class LMDBTrajectoryDataset(Dataset):
             chunk_name = traj_name + "_" + str(chunk_id)
             serialized_chunk = txn.get(chunk_name.encode())
             chunk = pickle.loads(serialized_chunk)
-            pile_chunks.extend(chunk)
+            pile_chunks.extend(chunk)  # concat
         _si = si - s_chunk * self.chunk_size
         _ei = ei - s_chunk * self.chunk_size
         
