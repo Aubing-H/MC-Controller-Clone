@@ -33,6 +33,7 @@ from src.utils import negtive_sample, EvalMetric
 from src.utils.vision import create_backbone, resize_image
 from src.utils.loss import get_loss_fn
 from src.data.data_lmdb import LMDBTrajectoryDataset
+from src.data.dataloader import DatasetLoader
 from src.eval.parallel_eval import ParallelEval
 
 torch.set_float32_matmul_precision('high')
@@ -85,7 +86,17 @@ class Trainer:
         if not cfg["eval"]["only"]:  # Train model
             #! use lmdb type dataset
             print("[Progress] [blue]Loading dataset...")
-            self.train_dataset = LMDBTrajectoryDataset(
+            # self.train_dataset = LMDBTrajectoryDataset(
+            #     in_dir=cfg['data']['train_data'],
+            #     # 1e4 * 32
+            #     aug_ratio=cfg['optimize']['aug_ratio'] * cfg['optimize']['batch_size'],
+            #     embedding_dict= self.embedding_dict,
+            #     per_data_filters=cfg['data']['per_data_filters'],  # null
+            #     skip_frame=cfg['data']['skip_frame'],  # 5
+            #     window_len=cfg['data']['window_len'],  # 16
+            #     padding_pos=cfg['data']['padding_pos'],  # left
+            # )
+            self.train_dataset = DatasetLoader(
                 in_dir=cfg['data']['train_data'],
                 # 1e4 * 32
                 aug_ratio=cfg['optimize']['aug_ratio'] * cfg['optimize']['batch_size'],
