@@ -202,19 +202,20 @@ class LMDBTrajectoryDataset(Dataset):
             horizon = traj_metadata["horizon"]
         
         assert horizon > 1, f"[ERROR] horizon must bigger than 1"
+        # random sample start -> mostly sample the last part trajectories
         t_goal = horizon - 1
         if self.random_start:
             si = 0
             while si % self.chunk_size == 0:
                 #! avoid sampling additional chunk
-                si = random.randint(1, t_goal-1)
+                si = random.randint(1, t_goal-1)  # random start frame num
         else:
             si = 1
         # math.ceil to up integer
         traj_len = min(math.ceil((t_goal - si) / self.skip_frame), self.window_len)
-        ei = si + (traj_len - 1) * self.skip_frame
+        ei = si + (traj_len - 1) * self.skip_frame  # end frame num
         # math.floor to down integer
-        s_chunk = math.floor(si / self.chunk_size)  # always 0 unless chunk_size==1
+        s_chunk = math.floor(si / self.chunk_size)  # chunk_size: sub-video size
         # <= (window_len - 1)*skip_frame/chunk_size
         e_chunk = math.floor(ei / self.chunk_size)  
         
@@ -229,7 +230,7 @@ class LMDBTrajectoryDataset(Dataset):
         _ei = ei - s_chunk * self.chunk_size
         
         obs, action, reward, done, info, prev_action = [], [], [], [], [], []
-        for frame_id in range(_si,_ei+1,self.skip_frame):
+        for frame_id in range(_si,_ei+1,self.skip_frame):  # sample with skip frame
             f_obs, f_action, f_reward, f_done, f_info = pile_chunks[frame_id]
             f_prev_action = pile_chunks[frame_id - 1][1]
             obs.append(f_obs)

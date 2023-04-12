@@ -9,6 +9,8 @@ wandb
 outputs
 models
 dataset
+test.py
+/test/
 .ipynb_checkpoints
 *.ipynb
 *.pkl

@@ -62,7 +62,7 @@ class Bilinear(nn.Module):
 
 
 class FiLM(nn.Module):
-    def __init__(self, input_dim: int, output: int):
+    def __init__(self, input_dim: int, output_dim: int):
         super().__init__()
         self.U = nn.Linear(input_dim, output_dim)
         self.V = nn.Linear(input_dim, output_dim)
@@ -110,7 +110,7 @@ class ExtraObsEmbedding(nn.Module):
         )
         self.embed_voxels = nn.Embedding(32,  embed_dims['voxels_hiddim']//4)
         self.embed_voxels_last = build_mlp(
-            input_dim=12*embed_dims['voxels_hiddim']//4,
+            input_dim=27*embed_dims['voxels_hiddim']//4,  # 12 -> 27
             hidden_dim=embed_dims['voxels_hiddim'],
             output_dim=embed_dims['voxels_hiddim'],
             hidden_depth=2,

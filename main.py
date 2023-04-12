@@ -28,6 +28,7 @@ from tqdm import tqdm
 from functools import partial
 from ray.rllib.models.torch.torch_action_dist import TorchMultiCategorical
 from minedojo.minedojo_wrapper import MineDojoEnv
+
 from src.models.simple import SimpleNetwork
 from src.utils import negtive_sample, EvalMetric
 from src.utils.vision import create_backbone, resize_image
@@ -36,8 +37,8 @@ from src.data.data_lmdb import LMDBTrajectoryDataset
 from src.data.dataloader import DatasetLoader
 from src.eval.parallel_eval import ParallelEval
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '4,5'
 torch.set_float32_matmul_precision('high')
-
 torch.backends.cudnn.benchmark = True
 
 def making_exp_name(cfg):
@@ -311,7 +312,6 @@ class Trainer:
                         }, step=iter_num)
                 
 
-
     def train_iteration(self, iter_num=0):
 
         self.model.train()
@@ -357,7 +357,7 @@ class Trainer:
         goals = goals.to(self.device)
         actions = actions.to(self.device)
         horizons = horizons.to(self.device)
-        timesteps = timesteps.to(self.device) #! timesteps is deperacated
+        timesteps = timesteps.to(self.device)  #! timesteps is deperacated
         attention_mask = attention_mask.to(self.device)
         
         if self.cfg['model']['name'] == 'simple':

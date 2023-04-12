@@ -7,6 +7,7 @@ import pickle
 import torch
 from torch.utils.data import Dataset
 from typing import *
+from tqdm import tqdm
 
 from src.utils.utils import VideoHolder, ImageHolder
 
@@ -36,7 +37,7 @@ def discrete_horizon(horizon):
         horizon_list += [i] * 10
     for i in range(10, 15):
         horizon_list += [i] * 20
-    horizon_list += [15] * 700
+    horizon_list += [15] * 5000  # the max steps it will reach
     if type(horizon) == torch.Tensor:
         return torch.Tensor(horizon_list, device=horizon.device)[horizon]
     elif type(horizon) == np.ndarray:
@@ -65,7 +66,7 @@ class DatasetLoader(Dataset):
         else:
             self.base_dirs = in_dir
         
-        self.aug_ratio = 2  # aug_ratio
+        self.aug_ratio = aug_ratio
         self.embedding_dict = embedding_dict
         self.filters = list(embedding_dict.keys())  # goals
         self.skip_frame = skip_frame
@@ -76,11 +77,11 @@ class DatasetLoader(Dataset):
         
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
         for dir in self.base_dirs:
-            img_dir = os.path.join(dir, 'vido-sample')
+            img_dir = os.path.join(dir, 'video-sample')
             lmdb_dir = os.path.join(dir, 'lmdb-test')
             env = lmdb.open(lmdb_dir)
             txn = env.begin()
-            for key, value in txn.cursor():
+            for key, value in tqdm(txn.cursor()):
                 name = key.decode()
                 traj = pickle.loads(value)  # dict
                 traj['rgb'] = []
@@ -89,6 +90,8 @@ class DatasetLoader(Dataset):
                 for frame in videoholder.read_frame():
                     frame = imholder.hwc2chw(frame[..., ::-1])  # [H, W, BGR] -> [RGB, H, W]
                     traj['rgb'].append(frame)
+                if len(traj['rgb']) == 0:  # empty list is not allowed for np.stack
+                    continue
                 traj['rgb'] = np.stack(traj['rgb'])
                 self.trajectories[name] = traj
                 
@@ -101,7 +104,7 @@ class DatasetLoader(Dataset):
         window_len = self.window_len
         traj_len = goal.shape[0]
         
-        rgb_dim = state['rgb'].shape[1:]
+        rgb_dim = state['rgb'].shape[1:]  # [traj_len, C, H, W] -> [C, H, W]
         voxels_dim = state['voxels'].shape[1:]
         compass_dim = state['compass'].shape[1:]
         gps_dim = state['gps'].shape[1:]
@@ -157,36 +160,38 @@ class DatasetLoader(Dataset):
         name = random.choice(list(self.trajectories.keys()))
         traj_meta = self.trajectories[name]
         goal = traj_meta['goal'][0]
-        horizon = traj_meta['horizon'][0]        
-        
-        obs, action, prev_action = [], [], []
-        f_prev_act = self.trajectories[0][1]
-        for frame_id in range(horizon):
-            f_obs, f_action = self.trajectories[frame_id]
-            obs.append(f_obs)
-            action.append(f_action)
-            prev_action.append(f_prev_act)
-            f_prev_act = f_action
-        
+        horizon = traj_meta['horizon'][0]  # total length
+        if horizon != len(traj_meta['rgb']):
+            print('Horizon not correct in id: {}'.format(name))
+            horizon = len(traj_meta['rgb'])
+
+        assert horizon > self.skip_frame
+        # always rand_start:
+        rand_start = random.randint(1, horizon - self.skip_frame)
+        # snap_len >= 1
+        snap_len = min((horizon - rand_start) // self.skip_frame, self.window_len)
+        frame_end = rand_start + snap_len * self.skip_frame
+
+
         state = {}
-        state['rgb'] = self.trajectories['rgb']
-        state['voxels'] = self.trajectories['voxels']
-        state['compass'] = self.trajectories['compass']
-        state['gps'] = self.trajectories['gps'] / np.array([[1000., 100., 1000.]])
+        state['rgb'] = traj_meta['rgb'][rand_start:frame_end:self.skip_frame]
+        state['voxels'] = traj_meta['voxels'][rand_start:frame_end:self.skip_frame]
+        state['compass'] = traj_meta['compass'][rand_start:frame_end:self.skip_frame]
+        state['gps'] = traj_meta['gps'][rand_start:frame_end:self.skip_frame] / np.array([[1000., 100., 1000.]])
         
-        state['biome'] = self.trajectories['biome']
-        # repeat first action, remove last action
-        state['prev_action'] = np.concatenate([self.trajectories['action'][0:1], 
-                                               self.trajectories['action'][0:-1]])
+        state['biome'] = traj_meta['biome'][rand_start:frame_end:self.skip_frame]
+        state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         
 
-        action = self.trajectories['action']
-        goal = np.repeat(self.embedding_dict[goal], horizon, 0)
+        action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
 
-        timestep = np.arange(0, horizon)
-        horizon_list = np.arange(horizon - 1, -1, -1)
+
+        goal = np.repeat(self.embedding_dict[goal], snap_len, 0)
+
+        timestep = np.arange(0, snap_len)
+        # the remaining steps
+        horizon_list = np.arange(horizon-rand_start-1, horizon-frame_end-1, -self.skip_frame)
         horizon_list = discrete_horizon(horizon_list)
-        
         
         return self.padding(goal, state, action, horizon_list, timestep)
         
