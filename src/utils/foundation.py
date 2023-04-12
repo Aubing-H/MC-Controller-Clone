@@ -110,7 +110,7 @@ class ExtraObsEmbedding(nn.Module):
         )
         self.embed_voxels = nn.Embedding(32,  embed_dims['voxels_hiddim']//4)
         self.embed_voxels_last = build_mlp(
-            input_dim=27*embed_dims['voxels_hiddim']//4,  # 12 -> 27
+            input_dim=12*embed_dims['voxels_hiddim']//4,
             hidden_dim=embed_dims['voxels_hiddim'],
             output_dim=embed_dims['voxels_hiddim'],
             hidden_depth=2,
