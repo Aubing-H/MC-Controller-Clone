@@ -48,7 +48,7 @@ optimize:
   aug_ratio: 10000
   
 record:
-  ckpt_freq: 2
+  ckpt_freq: 1
   log_to_wandb: False
   dir: ${hydra:runtime.cwd}/recordings
   frames: False

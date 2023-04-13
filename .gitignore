@@ -11,6 +11,7 @@ models
 dataset
 test.py
 /test/
+run.sh
 .ipynb_checkpoints
 *.ipynb
 *.pkl

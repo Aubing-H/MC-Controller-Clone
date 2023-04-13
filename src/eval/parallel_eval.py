@@ -84,8 +84,8 @@ class ParallelEval:
 
         def preprocess_obs(obs: dict):
             res_obs = {}
-            rgb = torch.from_numpy(obs['rgb']).unsqueeze(0).to(device=self.device, dtype=torch.float32).permute(0, 3, 1, 2)
-            res_obs['rgb'] = resize_image(rgb, target_resolution=(120, 160))
+            rgb = torch.from_numpy(obs['rgb']).unsqueeze(0).to(device=self.device, dtype=torch.float32)  # remove .permute(0, 3, 1, 2)
+            res_obs['rgb'] = rgb  # remove resize_image(rgb, target_resolution=(120, 160))
             res_obs['voxels'] = torch.from_numpy(obs['voxels']).reshape(-1).unsqueeze(0).to(device=self.device, dtype=torch.long)
             res_obs['compass'] = torch.from_numpy(obs['compass']).unsqueeze(0).to(device=self.device, dtype=torch.float32)
             res_obs['gps'] = torch.from_numpy(obs['gps'] / np.array([1000., 100., 1000.])).unsqueeze(0).to(device=self.device, dtype=torch.float32)
