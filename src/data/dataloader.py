@@ -10,6 +10,7 @@ from typing import *
 from tqdm import tqdm
 
 from src.utils.utils import VideoHolder, ImageHolder
+from torch.distributions.categorical import Categorical
 
 
 def discrete_horizon(horizon):
@@ -167,7 +168,13 @@ class DatasetLoader(Dataset):
 
         assert horizon > self.skip_frame
         # always rand_start:
-        rand_start = random.randint(1, horizon - self.skip_frame)
+        traj_meta['action_quality']
+        aq = torch.from_numpy(traj_meta['action_quality'])
+        cg = Categorical(aq)
+        rand_start = cg.sample().item()
+        rand_start = max(1, rand_start)
+        rand_start = min(rand_start, horizon - self.skip_frame - 1)
+        # rand_start = random.randint(1, horizon - self.skip_frame)
         # snap_len >= 1
         snap_len = min((horizon - rand_start) // self.skip_frame, self.window_len)
         frame_end = rand_start + snap_len * self.skip_frame
