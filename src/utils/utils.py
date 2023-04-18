@@ -71,6 +71,9 @@ class VideoHolder:
         except Exception as e:
             print(e)
 
+    def release(self):
+        self.writer.release()
+
     def read_frame(self):  # return a generator type, use it as iterator
         cap = cv2.VideoCapture(self.video_path)
         ret, frame = cap.read()

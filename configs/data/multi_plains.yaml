@@ -1,5 +1,5 @@
 train_data: 
-  - ${hydra:runtime.cwd}/dataset/plains_lmdb
+  - ${hydra:runtime.cwd}/dataset/diamondaxe0412aq
 
 filters: 
   - log

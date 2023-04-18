@@ -168,8 +168,7 @@ class DatasetLoader(Dataset):
 
         assert horizon > self.skip_frame
         # always rand_start:
-        traj_meta['action_quality']
-        aq = torch.from_numpy(traj_meta['action_quality'])
+        aq = torch.from_numpy(traj_meta['action_quality']).float()
         cg = Categorical(aq)
         rand_start = cg.sample().item()
         rand_start = max(1, rand_start)
@@ -189,7 +188,6 @@ class DatasetLoader(Dataset):
         state['biome'] = traj_meta['biome'][rand_start:frame_end:self.skip_frame]
         state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         
-
         action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
 
 
@@ -202,4 +200,3 @@ class DatasetLoader(Dataset):
         
         return self.padding(goal, state, action, horizon_list, timestep)
         
-    
