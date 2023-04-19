@@ -78,7 +78,9 @@ class DatasetLoader(Dataset):
         
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
         for dir in self.base_dirs:
-            for name in os.listdir(dir):
+            for i, name in enumerate(os.listdir(dir)):
+                if i >= 2000:
+                    break
                 pickle_path = os.path.join(dir, name)
                 with open(pickle_path, 'rb') as file:
                     traj_data = file.read()
@@ -156,14 +158,14 @@ class DatasetLoader(Dataset):
         '''
             sample video segment from action quanlity score, the higher scrore,
             more liky the segment will be chosen.'''
-        aq = torch.from_numpy(traj_meta['action_quality']).float()
+        aq = torch.from_numpy(traj_meta['action_quality'] + 0.01).float()
         cg = Categorical(aq)
         rand_start = cg.sample().item()
         ''' 
             start from at least 1 for sampling prev_action, end at most n_frame
             - skip_frame for at least one frame is chosen. '''
         rand_start = max(1, rand_start)
-        rand_start = min(rand_start, n_frames - self.skip_frame - 1)
+        rand_start = min(rand_start, n_frames - self.skip_frame)
         # the actual frames chosen for training
         snap_len = min((n_frames - rand_start) // self.skip_frame, self.window_len)
         frame_end = rand_start + snap_len * self.skip_frame

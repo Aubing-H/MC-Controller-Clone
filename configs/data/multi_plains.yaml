@@ -1,5 +1,5 @@
 train_data: 
-  - /home/vcis11/userlist/houjinbing/Documents/Video-Pre-Training/output/pickle
+  - ${hydra:runtime.cwd}/dataset/plains_lmdb
 
 filters: 
   - findcave
