@@ -1,9 +1,6 @@
 train_data: 
-  - ${hydra:runtime.cwd}/dataset/diamondaxe0412aq
+  - /home/vcis11/userlist/houjinbing/Documents/Video-Pre-Training/output/pickle
 
 filters: 
-  - log
-  - sheep
-  - cow
-  - pig
+  - findcave
 

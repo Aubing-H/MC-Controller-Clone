@@ -78,23 +78,12 @@ class DatasetLoader(Dataset):
         
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
         for dir in self.base_dirs:
-            img_dir = os.path.join(dir, 'video-sample')
-            lmdb_dir = os.path.join(dir, 'lmdb-test')
-            env = lmdb.open(lmdb_dir)
-            txn = env.begin()
-            for key, value in tqdm(txn.cursor()):
-                name = key.decode()
-                traj = pickle.loads(value)  # dict
-                traj['rgb'] = []
-                imholder = ImageHolder()
-                videoholder = VideoHolder(os.path.join(img_dir, name + '.mp4'))
-                for frame in videoholder.read_frame():
-                    frame = imholder.hwc2chw(frame[..., ::-1])  # [H, W, BGR] -> [RGB, H, W]
-                    traj['rgb'].append(frame)
-                if len(traj['rgb']) == 0:  # empty list is not allowed for np.stack
-                    continue
-                traj['rgb'] = np.stack(traj['rgb'])
-                self.trajectories[name] = traj
+            for name in os.listdir(dir):
+                pickle_path = os.path.join(dir, name)
+                with open(pickle_path, 'rb') as file:
+                    traj_data = file.read()
+                    traj = pickle.loads(traj_data)  # dict
+                self.trajectories[name.split('.')[0]] = traj
                 
 
     def __len__(self):
@@ -161,41 +150,40 @@ class DatasetLoader(Dataset):
         name = random.choice(list(self.trajectories.keys()))
         traj_meta = self.trajectories[name]
         goal = traj_meta['goal'][0]
-        horizon = traj_meta['horizon'][0]  # total length
-        if horizon != len(traj_meta['rgb']):
-            print('Horizon not correct in id: {}'.format(name))
-            horizon = len(traj_meta['rgb'])
+        n_frames = len(traj_meta['rgb'])
 
-        assert horizon > self.skip_frame
-        # always rand_start:
+        assert n_frames > self.skip_frame
+        '''
+            sample video segment from action quanlity score, the higher scrore,
+            more liky the segment will be chosen.'''
         aq = torch.from_numpy(traj_meta['action_quality']).float()
         cg = Categorical(aq)
         rand_start = cg.sample().item()
+        ''' 
+            start from at least 1 for sampling prev_action, end at most n_frame
+            - skip_frame for at least one frame is chosen. '''
         rand_start = max(1, rand_start)
-        rand_start = min(rand_start, horizon - self.skip_frame - 1)
-        # rand_start = random.randint(1, horizon - self.skip_frame)
-        # snap_len >= 1
-        snap_len = min((horizon - rand_start) // self.skip_frame, self.window_len)
+        rand_start = min(rand_start, n_frames - self.skip_frame - 1)
+        # the actual frames chosen for training
+        snap_len = min((n_frames - rand_start) // self.skip_frame, self.window_len)
         frame_end = rand_start + snap_len * self.skip_frame
-
 
         state = {}
         state['rgb'] = traj_meta['rgb'][rand_start:frame_end:self.skip_frame]
-        state['voxels'] = traj_meta['voxels'][rand_start:frame_end:self.skip_frame]
-        state['compass'] = traj_meta['compass'][rand_start:frame_end:self.skip_frame]
-        state['gps'] = traj_meta['gps'][rand_start:frame_end:self.skip_frame] / np.array([[1000., 100., 1000.]])
+        state['voxels'] = np.ones((snap_len, 3, 2, 2), dtype=np.int64)
+        state['compass'] = np.zeros((snap_len, 2), dtype=np.float32)
+        state['gps'] = np.zeros((snap_len, 3), dtype=np.float32)
         
-        state['biome'] = traj_meta['biome'][rand_start:frame_end:self.skip_frame]
+        state['biome'] = np.ones((snap_len,), dtype=np.int64)
         state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         
         action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
-
 
         goal = np.repeat(self.embedding_dict[goal], snap_len, 0)
 
         timestep = np.arange(0, snap_len)
         # the remaining steps
-        horizon_list = np.arange(horizon-rand_start-1, horizon-frame_end-1, -self.skip_frame)
+        horizon_list = np.arange(n_frames-rand_start-1, n_frames-frame_end-1, -self.skip_frame)
         horizon_list = discrete_horizon(horizon_list)
         
         return self.padding(goal, state, action, horizon_list, timestep)

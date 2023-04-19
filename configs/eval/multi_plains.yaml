@@ -9,12 +9,7 @@ envs:
   - 'Plains'
 
 goals: 
-  - 'log'
-  - 'cow'
-  - 'sheep'
-  - 'pig'
+  - 'findcave'
+
 env_id:
-  - 0
-  - 0
-  - 0
   - 0
