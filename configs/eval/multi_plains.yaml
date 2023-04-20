@@ -10,6 +10,8 @@ envs:
 
 goals: 
   - 'findcave'
+  -  'log'
 
 env_id:
+  - 0
   - 0

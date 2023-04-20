@@ -37,7 +37,7 @@ from src.data.data_lmdb import LMDBTrajectoryDataset
 from src.data.dataloader import DatasetLoader
 from src.eval.parallel_eval import ParallelEval
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 torch.set_float32_matmul_precision('high')
 torch.backends.cudnn.benchmark = True
 

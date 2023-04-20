@@ -3,4 +3,5 @@ train_data:
 
 filters: 
   - findcave
+  - log
 

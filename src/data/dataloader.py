@@ -78,7 +78,7 @@ class DatasetLoader(Dataset):
         
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
         for dir in self.base_dirs:
-            for i, name in enumerate(os.listdir(dir)):
+            for name in tqdm(os.listdir(dir)):
                 # if i >= 6000:
                 #     break
                 pickle_path = os.path.join(dir, name)
@@ -86,7 +86,7 @@ class DatasetLoader(Dataset):
                     traj_data = file.read()
                     traj = pickle.loads(traj_data)  # dict
                 self.trajectories[name.split('.')[0]] = traj
-                
+        print('---- Dateset loader initialized. ----')    
 
     def __len__(self):
         return self.aug_ratio  # 1e4 * 32
@@ -174,11 +174,20 @@ class DatasetLoader(Dataset):
         state['rgb'] = traj_meta['rgb'][rand_start:frame_end:self.skip_frame]
         state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
+        action *= (action < np.array([[3, 3, 4, 11, 11, 8, 1, 1]]))
+        state['prev_action'] *= (state['prev_action'] < np.array([[3, 3, 4, 11, 11, 8, 1, 1]]))
 
-        state['voxels'] = np.ones((snap_len, 3, 2, 2), dtype=np.int64)
-        state['compass'] = np.zeros((snap_len, 2), dtype=np.float32)
-        state['gps'] = np.zeros((snap_len, 3), dtype=np.float32)
-        state['biome'] = np.ones((snap_len,), dtype=np.int64)
+
+        if traj_meta.__contains__('voxels'):
+            state['voxels'] = traj_meta['voxels'][rand_start:frame_end:self.skip_frame]
+            state['compass'] = traj_meta['compass'][rand_start:frame_end:self.skip_frame]
+            state['biome'] = traj_meta['biome'][rand_start:frame_end:self.skip_frame]
+            state['gps'] = traj_meta['gps'][rand_start:frame_end:self.skip_frame] / np.array([[1000., 100., 1000.]])
+        else:
+            state['voxels'] = np.ones((snap_len, 3, 2, 2), dtype=np.int64)
+            state['biome'] = np.ones((snap_len,), dtype=np.int64)
+            state['compass'] = np.zeros((snap_len, 2), dtype=np.float32)
+            state['gps'] = np.zeros((snap_len, 3), dtype=np.float32)
         
         goal = np.repeat(self.embedding_dict[goal], snap_len, 0)
 
