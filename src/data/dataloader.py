@@ -79,8 +79,8 @@ class DatasetLoader(Dataset):
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
         for dir in self.base_dirs:
             for i, name in enumerate(os.listdir(dir)):
-                if i >= 2000:
-                    break
+                # if i >= 6000:
+                #     break
                 pickle_path = os.path.join(dir, name)
                 with open(pickle_path, 'rb') as file:
                     traj_data = file.read()
@@ -172,15 +172,14 @@ class DatasetLoader(Dataset):
 
         state = {}
         state['rgb'] = traj_meta['rgb'][rand_start:frame_end:self.skip_frame]
+        state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
+        action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
+
         state['voxels'] = np.ones((snap_len, 3, 2, 2), dtype=np.int64)
         state['compass'] = np.zeros((snap_len, 2), dtype=np.float32)
         state['gps'] = np.zeros((snap_len, 3), dtype=np.float32)
-        
         state['biome'] = np.ones((snap_len,), dtype=np.int64)
-        state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         
-        action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
-
         goal = np.repeat(self.embedding_dict[goal], snap_len, 0)
 
         timestep = np.arange(0, snap_len)
