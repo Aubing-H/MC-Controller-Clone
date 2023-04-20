@@ -1,7 +1,14 @@
 train_data: 
-  - ${hydra:runtime.cwd}/dataset/plains_lmdb
-
+  - /home/vcis11/userlist/houjinbing/datasets/minecraft/findcave-with-action
+  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-log/data-pkl
+  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-sheep/data-pkl
+  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-cow/data-pkl
+  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-pig/data-pkl
+  - /home/vcis11/userlist/houjinbing/datasets/minecraft/handcraft/pickle
 filters: 
   - findcave
   - log
+  - sheep
+  - cow
+  - pig
 

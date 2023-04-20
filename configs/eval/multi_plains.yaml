@@ -10,8 +10,14 @@ envs:
 
 goals: 
   - 'findcave'
-  -  'log'
+  - 'log'
+  - 'sheep'
+  - 'cow'
+  - 'pig'
 
 env_id:
+  - 0
+  - 0
+  - 0
   - 0
   - 0

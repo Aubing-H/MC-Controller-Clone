@@ -77,15 +77,23 @@ class DatasetLoader(Dataset):
         self.random_start = random_start  # True
         
         self.trajectories = {}  # {name: {'item': [val, ...], ...}, ...}
+        self.goal_name, self.findcave_name = [], []
         for dir in self.base_dirs:
+            i = 0
             for name in tqdm(os.listdir(dir)):
-                # if i >= 6000:
+                # if i >= 100:
                 #     break
+                i += 1
                 pickle_path = os.path.join(dir, name)
                 with open(pickle_path, 'rb') as file:
                     traj_data = file.read()
                     traj = pickle.loads(traj_data)  # dict
-                self.trajectories[name.split('.')[0]] = traj
+                name = name.split('.')[0]
+                if traj['goal'][0] in set(['log', 'sheep', 'cow', 'pig']):
+                    self.goal_name.append(name)
+                else:
+                    self.findcave_name.append(name)
+                self.trajectories[name] = traj
         print('---- Dateset loader initialized. ----')    
 
     def __len__(self):
@@ -149,7 +157,10 @@ class DatasetLoader(Dataset):
         return goal, state, action, horizon, timestep, mask
 
     def __getitem__(self, idx):
-        name = random.choice(list(self.trajectories.keys()))
+        if random.choice([0, 1]) == 0:
+            name = random.choice(self.goal_name)
+        else:
+            name = random.choice(self.findcave_name)
         traj_meta = self.trajectories[name]
         goal = traj_meta['goal'][0]
         n_frames = len(traj_meta['rgb'])
@@ -174,6 +185,7 @@ class DatasetLoader(Dataset):
         state['rgb'] = traj_meta['rgb'][rand_start:frame_end:self.skip_frame]
         state['prev_action'] = traj_meta['action'][rand_start-1:frame_end-1:self.skip_frame]
         action = traj_meta['action'][rand_start:frame_end:self.skip_frame]
+        # action out of range check
         action *= (action < np.array([[3, 3, 4, 11, 11, 8, 1, 1]]))
         state['prev_action'] *= (state['prev_action'] < np.array([[3, 3, 4, 11, 11, 8, 1, 1]]))
 
