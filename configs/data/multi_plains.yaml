@@ -1,10 +1,6 @@
 train_data: 
   - /home/vcis11/userlist/houjinbing/datasets/minecraft/findcave-with-action
-  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-log/data-pkl
-  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-sheep/data-pkl
-  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-cow/data-pkl
-  - /home/vcis11/userlist/houjinbing/Documents/minecraft/MCSampler/output/goal-pig/data-pkl
-  - /home/vcis11/userlist/houjinbing/datasets/minecraft/handcraft/pickle
+  - /home/vcis11/userlist/houjinbing/datasets/minecraft/handcraft/goal-cow/data-pkl
 filters: 
   - findcave
   - log

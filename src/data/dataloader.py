@@ -81,8 +81,8 @@ class DatasetLoader(Dataset):
         for dir in self.base_dirs:
             i = 0
             for name in tqdm(os.listdir(dir)):
-                # if i >= 100:
-                #     break
+                if i >= 10000:
+                    break
                 i += 1
                 pickle_path = os.path.join(dir, name)
                 with open(pickle_path, 'rb') as file:
@@ -157,7 +157,7 @@ class DatasetLoader(Dataset):
         return goal, state, action, horizon, timestep, mask
 
     def __getitem__(self, idx):
-        if random.choice([0, 1]) == 0:
+        if random.randint(0, 99) > 0:  # 99: 1
             name = random.choice(self.goal_name)
         else:
             name = random.choice(self.findcave_name)

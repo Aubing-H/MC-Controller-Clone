@@ -1,5 +1,6 @@
 import cv2
 import os
+import pathlib
 import time
 import gym
 import numpy as np
@@ -404,6 +405,12 @@ class Trainer:
 
 @hydra.main(config_path="configs", config_name="defaults")
 def main(cfg):
+    cur_dir = pathlib.Path.cwd()
+    print('## main path: ', cur_dir)
+    os.system('ln -s {} {}'.format(
+        cfg.openai_path,
+        os.path.join(cur_dir, 'openai')
+    ))
     if cfg.optimize.parallel:  # False
         local_rank = int(os.environ['LOCAL_RANK'])
         torch.distributed.init_process_group(backend='nccl')

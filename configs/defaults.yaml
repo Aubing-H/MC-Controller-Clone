@@ -55,3 +55,5 @@ record:
 
 simulator:
   resolution: [640, 480]
+
+openai_path: ${hydra:runtime.cwd}/openai
